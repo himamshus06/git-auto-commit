@@ -22,10 +22,10 @@ cd git-auto
 npm install
 ```
 
-### 3. Link Globally
+### 3. Install Globally
 To use the `git-auto` command anywhere on your system:
 ```bash
-npm link
+npm install -g @himamshus06/git-auto
 ```
 
 ## ⚙️ Configuration
