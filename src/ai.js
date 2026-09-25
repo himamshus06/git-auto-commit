@@ -17,13 +17,24 @@ async function generateCommitMessage(diff) {
         throw new Error('GROQ_API_KEY is missing from .env file.');
     }
 
+    // TRUNCATION LOGIC:
+    // Prevent "Request too large" errors by limiting the diff size.
+    // 10,000 characters is usually enough to understand the changes
+    // while staying safely under free-tier token limits.
+    const MAX_DIFF_LENGTH = 10000;
+    let processedDiff = diff;
+    if (diff.length > MAX_DIFF_LENGTH) {
+        processedDiff = diff.substring(0, MAX_DIFF_LENGTH) +
+                        '\n\n... (diff truncated due to size)';
+    }
+
     const prompt = `
 Analyze the following git diff and write a professional, concise commit message.
 Follow the Conventional Commits specification (e.g., feat: ..., fix: ..., chore: ..., docs: ..., style: ..., refactor: ..., perf: ..., test: ...).
 Only return the commit message string itself, without any quotes or explanation.
 
 Diff:
-${diff}
+${processedDiff}
     `.trim();
 
     try {
