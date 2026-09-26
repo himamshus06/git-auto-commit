@@ -18,18 +18,17 @@ async function parseAndCreateTree(text) {
 
     for (const line of lines) {
         // 1. Determine depth
-        // Depth is based on the number of leading spaces/tree characters.
-        // Standard tree indentation is typically 4 spaces or characters.
+        // We find the first character that isn't a tree symbol or whitespace
         const match = line.match(/^([│\s├└]*)(.*)$/);
         if (!match) continue;
 
         const prefix = match[1];
-        const name = match[2].trim();
+        let name = match[2].trim();
 
         if (!name) continue;
 
-        // Calculate depth based on the prefix.
-        // Each 'level' in a standard tree is usually 4 characters.
+        // Depth is determined by the number of "blocks" of indentation.
+        // Most trees use 4 chars per level (e.g., "│   " or "├── ").
         const depth = Math.floor(prefix.length / 4);
 
         // 2. Adjust stack to current depth
@@ -37,13 +36,23 @@ async function parseAndCreateTree(text) {
             stack.pop();
         }
 
-        // 3. Push clean name to stack
-        stack.push(name.endsWith('/') ? name.slice(0, -1) : name);
+        // 3. Clean name (remove trailing slash for directory creation)
+        const isDirectory = name.endsWith('/') || !name.includes('.');
+        const cleanName = isDirectory ? name.replace(/\/$/, '') : name;
 
-        // 4. Form full path and create directory
+        stack.push(cleanName);
+
+        // 4. Form full path
         const fullPath = path.join(...stack);
         try {
-            fs.mkdirSync(fullPath, { recursive: true });
+            if (isDirectory) {
+                fs.mkdirSync(fullPath, { recursive: true });
+            } else {
+                // Ensure parent directory exists
+                const parentDir = path.dirname(fullPath);
+                fs.mkdirSync(parentDir, { recursive: true });
+                fs.writeFileSync(fullPath, ''); // Create empty file
+            }
             created.push(fullPath);
         } catch (err) {
             errors.push(`Failed to create ${fullPath}: ${err.message}`);
