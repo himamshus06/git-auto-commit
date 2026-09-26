@@ -1,6 +1,6 @@
 # Git-Auto 🚀
 
-`git-auto` is a lightweight CLI tool that automates the process of staging changes and generating professional, AI-powered commit messages. No more guessing what to write in your commit messages—let AI handle it!
+`git-auto`is a lightweight CLI tool that automates the process of staging changes and generating professional, AI-powered commit messages. No more guessing what to write in your commit messages—let AI handle it!
 
 ## ✨ Features
 
