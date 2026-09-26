@@ -27,9 +27,13 @@ async function parseAndCreateTree(text) {
 
         if (!name) continue;
 
-        // Depth is determined by the number of "blocks" of indentation.
-        // Most trees use 4 chars per level (e.g., "│   " or "├── ").
-        const depth = Math.floor(prefix.length / 4);
+        // Depth is determined by the number of 4-character blocks in the prefix.
+        // For most visual trees, each level of nesting is 4 characters (e.g., "│   " or "├── ").
+        // We strip the final tree symbol (├ or └) from the length if it's there.
+        const effectivePrefixLength = prefix.endsWith('├') || prefix.endsWith('└')
+            ? prefix.length - 1
+            : prefix.length;
+        const depth = Math.floor(effectivePrefixLength / 4);
 
         // 2. Adjust stack to current depth
         while (stack.length > depth) {
