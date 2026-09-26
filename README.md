@@ -7,7 +7,8 @@
 - **One-Command Workflow**: Stages all changes and commits them in one go.
 - **AI-Powered Messages**: Analyzes your `git diff` to generate a meaningful commit message.
 - **Conventional Commits**: Follows the [Conventional Commits](https://www.conventionalcommits.org/) specification (e.g., `feat:`, `fix:`, `chore:`).
-- **Customizable**: Override AI messages with your own or preview them before committing.
+- **Smart Diff Handling**: Uses a Map-Reduce approach to summarize large changes, ensuring no detail is lost regardless of diff size.
+- **Interactive Experience**: Preview and edit AI-generated messages before they are committed to your history.
 
 ## 📦 Installation
 
@@ -95,8 +96,11 @@ git auto commit --dry-run
 
 1. **Staging**: Runs `git add .` to stage all changes.
 2. **Diffing**: Extracts the staged changes using `git diff --cached`.
-3. **AI Generation**: Sends the diff to a Large Language Model (LLM) via Groq.
-4. **Committing**: Executes `git commit -m "generated_message"`.
+3. **AI Generation**: 
+    - **Map Phase**: For large diffs, it splits the changes into manageable chunks and generates a concise summary for each.
+    - **Reduce Phase**: It then aggregates these summaries into a single, professional commit message following Conventional Commits.
+4. **Interactive Review**: Presents the generated message for your approval or modification.
+5. **Committing**: Executes `git commit -m "final_message"`.
 
 ## 📜 License
 MIT
