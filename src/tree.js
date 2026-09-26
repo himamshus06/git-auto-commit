@@ -12,7 +12,17 @@ class TreeParseError extends Error {
 }
 
 /**
- * Parse a visual directory tree into structured items.
+ * Parse a visual directory tree.
+ *
+ * Supported format:
+ *
+ * my-project/
+ * ├── src/
+ * │   ├── index.js
+ * │   └── utils.js
+ * ├── public/
+ * │   └── index.html
+ * └── package.json
  */
 function parseTree(text) {
     if (!text || text.trim() === '') {
@@ -30,46 +40,111 @@ function parseTree(text) {
         const line = lines[i];
         const lineNum = i + 1;
 
-        const parsed = parseLine(line);
+        let name;
+        let depth;
 
-        if (!parsed) {
+        // --------------------------------------------------
+        // ROOT
+        // --------------------------------------------------
+
+        if (i === 0) {
+            name = line.trim();
+            depth = 0;
+        }
+
+        // --------------------------------------------------
+        // CHILD
+        // --------------------------------------------------
+
+        else {
+            /*
+             * Match:
+             *
+             * ├── src/
+             * └── package.json
+             *
+             * │   ├── index.js
+             * │   └── utils.js
+             *
+             * │   │   └── Button.jsx
+             */
+
+            const match = line.match(
+                /^((?:│   |    )*)(?:├── |└── |\+-- |`-- )(.*)$/
+            );
+
+            if (!match) {
+                throw new TreeParseError(
+                    `Could not parse line: "${line}"`,
+                    lineNum
+                );
+            }
+
+            const indentation = match[1];
+            name = match[2].trim();
+
+            /*
+             * Every 4 characters of indentation
+             * represents one level.
+             *
+             * ├── src/              depth 1
+             * │   ├── index.js      depth 2
+             * │   │   └── x.js      depth 3
+             */
+
+            depth = indentation.length / 4 + 1;
+        }
+
+        if (!name) {
             throw new TreeParseError(
-                `Unable to parse tree line: "${line}"`,
+                'Empty file/directory name',
                 lineNum
             );
         }
 
-        const { name, depth } = parsed;
+        // --------------------------------------------------
+        // STACK
+        // --------------------------------------------------
 
-        // Root must be depth 0
-        if (i === 0 && depth !== 0) {
-            throw new TreeParseError(
-                'Root item must have depth 0',
-                lineNum
-            );
-        }
+        /*
+         * If we're moving back up the tree,
+         * remove deeper entries.
+         *
+         * Example:
+         *
+         * │   ├── index.js
+         * │   └── utils.js
+         *
+         * When utils.js is processed, index.js
+         * must be removed from the stack.
+         */
 
-        // Prevent impossible jumps
-        if (depth > stack.length) {
-            throw new TreeParseError(
-                `Nesting depth jump detected`,
-                lineNum
-            );
-        }
-
-        // Remove anything deeper than the current item
         while (stack.length > depth) {
             stack.pop();
         }
 
-        // Detect directory/file
-        const isDirectory = detectDirectory(name);
+        /*
+         * Make sure we aren't jumping over a level.
+         */
+        if (depth > stack.length) {
+            throw new TreeParseError(
+                `Invalid nesting at depth ${depth}`,
+                lineNum
+            );
+        }
 
-        const cleanName = isDirectory
-            ? name.replace(/\/$/, '')
-            : name;
+        // --------------------------------------------------
+        // FILE / DIRECTORY
+        // --------------------------------------------------
 
-        // Add current item to stack
+        const isDirectory = name.endsWith('/');
+
+        const cleanName = name.replace(/\/$/, '');
+
+        // --------------------------------------------------
+        // PATH
+        // --------------------------------------------------
+
         stack.push(cleanName);
 
         const fullPath = path.join(...stack);
@@ -86,117 +161,46 @@ function parseTree(text) {
 }
 
 /**
- * Parse one line of a tree.
- */
-function parseLine(line) {
-    // Root:
-    // project/
-    if (!/^[│|├└+`]/.test(line)) {
-        return {
-            name: line.trim(),
-            depth: 0
-        };
-    }
-
-    /*
-     * Match tree indentation.
-     *
-     * Examples:
-     *
-     * ├── src/
-     * └── package.json
-     *
-     * │   ├── components/
-     * │   └── App.jsx
-     *
-     * │   │   └── Button.jsx
-     */
-
-    const match = line.match(/^((?:│   |    )*)(?:├── |└── |\+-- |`-- )(.*)$/);
-
-    if (!match) {
-        return null;
-    }
-
-    const indentation = match[1];
-    const name = match[2].trim();
-
-    // Every 4-character indentation block = one level.
-    const depth = indentation.length / 4 + 1;
-
-    return {
-        name,
-        depth
-    };
-}
-
-/**
- * Determine whether an item is a directory.
- *
- * Best case: directories end with /.
- *
- * For trees that don't include /, this falls back to
- * extension-based detection.
- */
-function detectDirectory(name) {
-    // Explicit directory marker
-    if (name.endsWith('/')) {
-        return true;
-    }
-
-    // Hidden files like .gitignore are files
-    if (name.startsWith('.')) {
-        return false;
-    }
-
-    // Files with extensions are files
-    if (path.extname(name) !== '') {
-        return false;
-    }
-
-    // Otherwise assume directory
-    return true;
-}
-
-/**
- * Parse tree and create files/directories.
+ * Create files and directories from parsed tree.
  */
 async function parseAndCreateTree(text) {
     const created = [];
     const errors = [];
 
+    let treeStructure;
+
     try {
-        const treeStructure = parseTree(text);
-
-        for (const item of treeStructure) {
-            try {
-                if (item.isDirectory) {
-                    fs.mkdirSync(item.fullPath, {
-                        recursive: true
-                    });
-                } else {
-                    const parentDir = path.dirname(item.fullPath);
-
-                    fs.mkdirSync(parentDir, {
-                        recursive: true
-                    });
-
-                    fs.writeFileSync(item.fullPath, '');
-                }
-
-                created.push(item.fullPath);
-            } catch (err) {
-                errors.push(
-                    `Failed to create ${item.fullPath}: ${err.message}`
-                );
-            }
-        }
+        treeStructure = parseTree(text);
     } catch (err) {
         if (err instanceof TreeParseError) {
             throw err;
         }
 
-        throw new Error(`Unexpected error: ${err.message}`);
+        throw new Error(`Unexpected parsing error: ${err.message}`);
+    }
+
+    for (const item of treeStructure) {
+        try {
+            if (item.isDirectory) {
+                fs.mkdirSync(item.fullPath, {
+                    recursive: true
+                });
+            } else {
+                const parentDir = path.dirname(item.fullPath);
+
+                fs.mkdirSync(parentDir, {
+                    recursive: true
+                });
+
+                fs.writeFileSync(item.fullPath, '');
+            }
+
+            created.push(item.fullPath);
+        } catch (err) {
+            errors.push(
+                `Failed to create ${item.fullPath}: ${err.message}`
+            );
+        }
     }
 
     return {
@@ -206,7 +210,7 @@ async function parseAndCreateTree(text) {
 }
 
 module.exports = {
-    parseAndCreateTree,
     parseTree,
+    parseAndCreateTree,
     TreeParseError
 };
