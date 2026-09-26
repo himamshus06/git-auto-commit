@@ -35,13 +35,41 @@ git config --global alias.ac "!git-auto"
 
 ## ⚙️ Configuration
 
-The tool uses the Groq API for fast, free AI generation.
+`git-auto` is provider-agnostic and supports multiple AI backends, including local LLMs.
 
-1. Get a free API key from [Groq Cloud](https://console.groq.com/).
-2. Create a `.env` file in the root directory:
-   ```env
-   GROQ_API_KEY=your_api_key_here
-   ```
+1. Create a `.env` file in the root directory.
+2. Choose your preferred provider configuration:
+
+### Option A: Groq (Default - Fast & Free)
+Get a free API key from [Groq Cloud](https://console.groq.com/).
+```env
+AI_PROVIDER=groq
+AI_API_KEY=your_groq_api_key_here
+```
+
+### Option B: OpenAI
+```env
+AI_PROVIDER=openai
+AI_API_KEY=your_openai_api_key_here
+AI_BASE_URL=https://api.openai.com/v1
+AI_MODEL=gpt-4o
+```
+
+### Option C: Local LLMs (via Ollama)
+Install [Ollama](https://ollama.com/) and run a model (e.g., `ollama run llama3`).
+```env
+AI_PROVIDER=ollama
+AI_MODEL=llama3
+AI_BASE_URL=http://localhost:11434/v1
+```
+
+### Advanced Configuration
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `AI_PROVIDER` | The AI backend to use (`groq`, `openai`, `ollama`, `local`) | `groq` |
+| `AI_API_KEY` | API key for cloud providers | (Required for cloud) |
+| `AI_BASE_URL` | API endpoint URL | `https://api.groq.com/openai/v1` |
+| `AI_MODEL` | The specific model ID to use | `qwen/qwen3.8-27b` |
 
 ## 🚀 Usage
 
