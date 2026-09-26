@@ -40,14 +40,14 @@ function parseTree(text) {
             rest = line.trim();
         } else {
             const prefix = line.slice(0, connectorIdx);
-            // Each ancestor level draws a fixed 4-char block ("│   " or "    ").
-            // +1 because having a connector at all means "at least one level below root".
-            depth = Math.round(prefix.length / 4) + 1;
+            // Use vertical bars as markers for nesting levels.
+            // depth = (number of vertical bars in prefix) + 1.
+            depth = (prefix.match(/│/g) || []).length + 1;
             rest = line.slice(connectorIdx);
         }
 
-        // Strip any remaining connector/line-drawing/space characters to get the name.
-        let name = rest.replace(new RegExp(`^${PREFIX_CHARS.source}+`), '').trim();
+        // Strip all leading characters that are not alphanumeric, dot, underscore, or hyphen.
+        let name = rest.replace(/^[^a-zA-Z0-9._-]+/, '').trim();
         // Strip a trailing inline comment ("  # explanation"), if present.
         name = name.replace(/\s+#.*$/, '').trim();
         if (!name) continue;

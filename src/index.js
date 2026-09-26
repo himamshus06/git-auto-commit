@@ -85,12 +85,12 @@ program
     .description('Create directories from a pasted directory tree')
     .action(async () => {
         const rl = readline.createInterface({ input, output });
-        console.log('Paste your directory tree below. Press Enter on an empty line to finish:');
+        console.log('Paste your directory tree below. Type \'DONE\' on a new line to finish:');
 
         let treeText = '';
         while (true) {
             const line = await rl.question('');
-            if (line === '') break;
+            if (line.trim().toUpperCase() === 'DONE') break;
             treeText += line + '\n';
         }
 
