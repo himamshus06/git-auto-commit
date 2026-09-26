@@ -4,6 +4,7 @@ const readline = require('node:readline/promises');
 const { stdin: input, stdout: output } = require('node:process');
 const git = require('./git');
 const ai = require('./ai');
+const tree = require('./tree');
 require('dotenv').config();
 
 const program = new Command();
@@ -78,5 +79,37 @@ program
             rl.close();
         }
     });
+
+program
+    .command('tree')
+    .description('Create directories from a pasted directory tree')
+    .action(async () => {
+        const rl = readline.createInterface({ input, output });
+        console.log('Paste your directory tree below. Press Enter on an empty line to finish:');
+
+        let treeText = '';
+        while (true) {
+            const line = await rl.question('');
+            if (line === '') break;
+            treeText += line + '\n';
+        }
+
+        try {
+            const result = await tree.parseAndCreateTree(treeText);
+            if (result.created.length > 0) {
+                console.log('\nSuccessfully created directories:');
+                result.created.forEach(dir => console.log(`  - ${dir}`));
+            }
+            if (result.errors.length > 0) {
+                console.log('\nErrors encountered:');
+                result.errors.forEach(err => console.error(`  - ${err}`));
+            }
+        } catch (error) {
+            console.error(`\nError: ${error.message}`);
+        } finally {
+            rl.close();
+        }
+    });
+
 
 program.parse(process.argv);

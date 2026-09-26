@@ -1,6 +1,6 @@
 # Git-Auto 🚀
 
-`git-auto`is a lightweight CLI tool that automates the process of staging changes and generating professional, AI-powered commit messages. No more guessing what to write in your commit messages—let AI handle it!
+`git-auto` is a lightweight CLI tool that automates the process of staging changes, generating professional AI-powered commit messages, and creating directory structures from pasted trees. No more guessing what to write in your commit messages or manually creating nested folders—let AI handle it!
 
 ## ✨ Features
 
@@ -10,8 +10,10 @@
 - **Conventional Commits**: Follows the [Conventional Commits](https://www.conventionalcommits.org/) specification (e.g., `feat:`, `fix:`, `chore:`).
 - **Smart Diff Handling**: Uses a Map-Reduce approach to summarize large changes, ensuring no detail is lost regardless of diff size.
 - **Interactive Experience**: Preview and edit AI-generated messages before they are committed to your history.
+- **Tree Generation**: Instantly create complex directory structures by pasting a visual tree.
 
 ## 📦 Installation
+
 
 ### 1. Clone the Repository
 ```bash
@@ -30,7 +32,7 @@ To use the `git auto` command anywhere on your system:
 npm install -g @himamshus06/git-auto
 ```
 
-To make it work as a git alias (`git ac commit` instead of `git-auto commit`), run:
+To make it work as a git alias (`git ac commit` or `git ac tree` instead of `git-auto commit`), run:
 ```bash
 git config --global alias.ac "!git-auto"
 ```
@@ -78,7 +80,13 @@ AI_BASE_URL=http://localhost:11434/v1
 ### Basic Commit
 Stages all changes and commits with an AI-generated message:
 ```bash
-git auto commit
+git-auto commit
+```
+
+### Create Directory Tree
+Create a directory structure by pasting a visual tree:
+```bash
+git-auto tree
 ```
 
 ### Commit with Custom Message
