@@ -12,73 +12,66 @@ class TreeParseError extends Error {
 }
 
 /**
- * Symbols used to define tree structures
- */
-const SYMBOLS = {
-    unicode: {
-        vertical: '│',
-        branch: '├',
-        leaf: '└',
-        space: ' '
-    },
-    ascii: {
-        vertical: '|',
-        branch: '+',
-        leaf: '`',
-        space: ' '
-    }
-};
-
-/**
- * Parses a visual tree string into a structured array of items.
- *
- * @param {string} text - The visual directory tree string.
- * @returns {Array<{name: string, depth: number, isDirectory: boolean, fullPath: string}>}
- * @throws {TreeParseError}
+ * Parse a visual directory tree into structured items.
  */
 function parseTree(text) {
     if (!text || text.trim() === '') {
         throw new TreeParseError('No tree provided');
     }
 
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    const stack = [];
+    const lines = text
+        .split(/\r?\n/)
+        .filter(line => line.trim() !== '');
+
     const result = [];
-    let currentDepth = -1;
+    const stack = [];
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const lineNum = i + 1;
 
-        // Regex to split prefix symbols/spaces from the actual name
-        const match = line.match(/^([│\s├└| \+`-]*) (.*)$/) || line.match(/^([│\s├└| \+`-]*)(.*)$/);
-        if (!match) continue;
+        const parsed = parseLine(line);
 
-        const prefix = match[1];
-        let name = match[2].trim();
-
-        if (!name) continue;
-
-        // Calculate depth based on "indentation units"
-        // A unit is typically 4 characters (symbol + 3 spaces) or similar.
-        // We count how many vertical bars or space blocks exist before the branch symbol.
-        const depth = calculateDepth(prefix);
-
-        // Logical Validation: Continuity Check
-        if (depth > currentDepth + 1) {
-            throw new TreeParseError(`Nesting depth jump detected (from ${currentDepth + 1} to ${depth})`, lineNum);
+        if (!parsed) {
+            throw new TreeParseError(
+                `Unable to parse tree line: "${line}"`,
+                lineNum
+            );
         }
 
-        // Adjust stack to current depth
+        const { name, depth } = parsed;
+
+        // Root must be depth 0
+        if (i === 0 && depth !== 0) {
+            throw new TreeParseError(
+                'Root item must have depth 0',
+                lineNum
+            );
+        }
+
+        // Prevent impossible jumps
+        if (depth > stack.length) {
+            throw new TreeParseError(
+                `Nesting depth jump detected`,
+                lineNum
+            );
+        }
+
+        // Remove anything deeper than the current item
         while (stack.length > depth) {
             stack.pop();
         }
 
-        // Reliable Type Detection
-        const isDirectory = name.endsWith('/') || (!name.includes('.') && !name.startsWith('.'));
-        const cleanName = isDirectory ? name.replace(/\/$/, '') : name;
+        // Detect directory/file
+        const isDirectory = detectDirectory(name);
 
+        const cleanName = isDirectory
+            ? name.replace(/\/$/, '')
+            : name;
+
+        // Add current item to stack
         stack.push(cleanName);
+
         const fullPath = path.join(...stack);
 
         result.push({
@@ -87,57 +80,86 @@ function parseTree(text) {
             isDirectory,
             fullPath
         });
-
-        currentDepth = depth;
     }
 
     return result;
 }
 
 /**
- * Determines the depth of a line based on its prefix.
- * Supports both Unicode and ASCII styles.
- *
- * @param {string} prefix
- * @returns {number}
+ * Parse one line of a tree.
  */
-function calculateDepth(prefix) {
-    if (!prefix) return 0;
-
-    // Standard visual trees use blocks of 4 characters per level (e.g., "│   " or "    ")
-    // We count these blocks.
-    let depth = 0;
-    let i = 0;
-    while (i < prefix.length) {
-        // Check if we've reached the terminal branch symbol (├ or └ or + or `)
-        if (prefix[i] === SYMBOLS.unicode.branch || prefix[i] === SYMBOLS.unicode.leaf ||
-            prefix[i] === SYMBOLS.ascii.branch || prefix[i] === SYMBOLS.ascii.leaf) {
-            break;
-        }
-
-        // Increment depth for every "unit" of indentation
-        // We assume a unit is 4 characters wide in most common formats
-        depth++;
-        i += 4;
+function parseLine(line) {
+    // Root:
+    // project/
+    if (!/^[│|├└+`]/.test(line)) {
+        return {
+            name: line.trim(),
+            depth: 0
+        };
     }
 
-    // Because we increment depth for every 4-char block,
-    // we need to handle cases where the prefix is shorter than a full block.
-    // A more robust way is to count actual vertical markers.
-    const markers = (prefix.match(/[│|]/g) || []).length;
+    /*
+     * Match tree indentation.
+     *
+     * Examples:
+     *
+     * ├── src/
+     * └── package.json
+     *
+     * │   ├── components/
+     * │   └── App.jsx
+     *
+     * │   │   └── Button.jsx
+     */
 
-    // Heuristic: If we have markers, that's our depth.
-    // Otherwise, we use the space-based block count.
-    if (markers > 0) return markers;
+    const match = line.match(/^((?:│   |    )*)(?:├── |└── |\+-- |`-- )(.*)$/);
 
-    return Math.floor(prefix.length / 4);
+    if (!match) {
+        return null;
+    }
+
+    const indentation = match[1];
+    const name = match[2].trim();
+
+    // Every 4-character indentation block = one level.
+    const depth = indentation.length / 4 + 1;
+
+    return {
+        name,
+        depth
+    };
 }
 
 /**
- * Parses a visual directory tree and creates the corresponding directories/files.
+ * Determine whether an item is a directory.
  *
- * @param {string} text - The visual directory tree string.
- * @returns {Promise<{created: string[], errors: string[]}>}
+ * Best case: directories end with /.
+ *
+ * For trees that don't include /, this falls back to
+ * extension-based detection.
+ */
+function detectDirectory(name) {
+    // Explicit directory marker
+    if (name.endsWith('/')) {
+        return true;
+    }
+
+    // Hidden files like .gitignore are files
+    if (name.startsWith('.')) {
+        return false;
+    }
+
+    // Files with extensions are files
+    if (path.extname(name) !== '') {
+        return false;
+    }
+
+    // Otherwise assume directory
+    return true;
+}
+
+/**
+ * Parse tree and create files/directories.
  */
 async function parseAndCreateTree(text) {
     const created = [];
@@ -149,25 +171,38 @@ async function parseAndCreateTree(text) {
         for (const item of treeStructure) {
             try {
                 if (item.isDirectory) {
-                    fs.mkdirSync(item.fullPath, { recursive: true });
+                    fs.mkdirSync(item.fullPath, {
+                        recursive: true
+                    });
                 } else {
                     const parentDir = path.dirname(item.fullPath);
-                    fs.mkdirSync(parentDir, { recursive: true });
+
+                    fs.mkdirSync(parentDir, {
+                        recursive: true
+                    });
+
                     fs.writeFileSync(item.fullPath, '');
                 }
+
                 created.push(item.fullPath);
             } catch (err) {
-                errors.push(`Failed to create ${item.fullPath}: ${err.message}`);
+                errors.push(
+                    `Failed to create ${item.fullPath}: ${err.message}`
+                );
             }
         }
     } catch (err) {
         if (err instanceof TreeParseError) {
-            throw err; // Rethrow parsing errors for the CLI to handle
+            throw err;
         }
+
         throw new Error(`Unexpected error: ${err.message}`);
     }
 
-    return { created, errors };
+    return {
+        created,
+        errors
+    };
 }
 
 module.exports = {
