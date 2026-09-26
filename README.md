@@ -4,6 +4,7 @@
 
 ## ✨ Features
 
+
 - **One-Command Workflow**: Stages all changes and commits them in one go.
 - **AI-Powered Messages**: Analyzes your `git diff` to generate a meaningful commit message.
 - **Conventional Commits**: Follows the [Conventional Commits](https://www.conventionalcommits.org/) specification (e.g., `feat:`, `fix:`, `chore:`).
