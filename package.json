@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/index.js",
   "bin": {
-    "git-auto": "src/index.js"
+    "git-ac": "src/index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

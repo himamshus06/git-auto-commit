@@ -23,7 +23,7 @@ npm install
 ```
 
 ### 3. Install Globally
-To use the `git-auto` command anywhere on your system:
+To use the `git ac` command anywhere on your system:
 ```bash
 npm install -g @himamshus06/git-auto
 ```
@@ -43,19 +43,19 @@ The tool uses the Groq API for fast, free AI generation.
 ### Basic Commit
 Stages all changes and commits with an AI-generated message:
 ```bash
-git-auto commit
+git ac commit
 ```
 
 ### Commit with Custom Message
 Override the AI and provide your own message:
 ```bash
-git-auto commit -m "feat: add amazing new feature"
+git ac commit -m "feat: add amazing new feature"
 ```
 
 ### Preview Message (Dry Run)
 See what the AI would generate without actually committing:
 ```bash
-git-auto commit --dry-run
+git ac commit --dry-run
 ```
 
 ## 🛠️ How it Works
