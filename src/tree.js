@@ -47,7 +47,9 @@ function parseTree(text) {
         }
 
         // Strip any remaining connector/line-drawing/space characters to get the name.
-        const name = rest.replace(new RegExp(`^${PREFIX_CHARS.source}+`), '').trim();
+        let name = rest.replace(new RegExp(`^${PREFIX_CHARS.source}+`), '').trim();
+        // Strip a trailing inline comment ("  # explanation"), if present.
+        name = name.replace(/\s+#.*$/, '').trim();
         if (!name) continue;
 
         if (depth > stack.length) {
