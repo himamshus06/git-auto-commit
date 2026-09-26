@@ -28,9 +28,9 @@ To use the `git auto` command anywhere on your system:
 npm install -g @himamshus06/git-auto
 ```
 
-To make it work as a git alias (`git auto commit` instead of `git-auto commit`), run:
+To make it work as a git alias (`git ac commit` instead of `git-auto commit`), run:
 ```bash
-git config --global alias.auto "!git-auto"
+git config --global alias.ac "!git-auto"
 ```
 
 ## ⚙️ Configuration
