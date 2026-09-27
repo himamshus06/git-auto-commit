@@ -7,10 +7,10 @@
 
 ## 🔍 Detailed Findings
 
-### `C:\Users\HIMAMSHU S\Desktop\cctest final\.env`
+### `C:\Users\HIMAMSHU S\Desktop\cctest final\.env.local`
 - **Issue:** Potential Sensitive File Exposed detected.
 - **Confidence:** High
 - **Suggested Action:** Rotate this key immediately and remove it from git history.
 
 ## 🛠 Actions Taken
-- Added `.env` to .gitignore
+- Added `.env.local` to .gitignore
