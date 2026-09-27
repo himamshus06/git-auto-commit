@@ -11,6 +11,7 @@
 - **Smart Diff Handling**: Uses a Map-Reduce approach to summarize large changes, ensuring no detail is lost regardless of diff size.
 - **Interactive Experience**: Preview and edit AI-generated messages before they are committed to your history.
 - **Tree Generation**: Instantly create complex directory structures by pasting a visual tree.
+- **Security Guard**: Scan your project for leaked secrets and API keys, generate security reports, and automatically update `.gitignore` to protect sensitive files.
 
 ## 📦 Installation
 
@@ -87,6 +88,12 @@ git-auto commit
 Create a directory structure by pasting a visual tree:
 ```bash
 git-auto tree
+```
+
+### Security Scan
+Scan for hardcoded secrets and protect your environment:
+```bash
+git-auto secure
 ```
 
 ### Commit with Custom Message
