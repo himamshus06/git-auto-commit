@@ -5,6 +5,7 @@ const { stdin: input, stdout: output } = require('node:process');
 const git = require('./git');
 const ai = require('./ai');
 const tree = require('./tree');
+const security = require('./security');
 require('dotenv').config();
 
 const program = new Command();
@@ -111,5 +112,12 @@ program
         }
     });
 
+
+program
+    .command('secure')
+    .description('Scan for security lapses, generate a report, and update .gitignore')
+    .action(async () => {
+        await security.runSecure();
+    });
 
 program.parse(process.argv);

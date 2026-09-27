@@ -129,5 +129,6 @@ ${diff}
 }
 
 module.exports = {
-    generateCommitMessage
+    generateCommitMessage,
+    getAIProvider
 };
